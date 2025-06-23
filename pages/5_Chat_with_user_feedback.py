@@ -5,7 +5,7 @@ import trubrics
 
 with st.sidebar:
     openai_api_key = st.text_input("OpenAI API Key", key="feedback_api_key", type="password")
-
+   
 st.title("📝 Chat with feedback (Trubrics)")
 
 
@@ -40,9 +40,7 @@ if st.session_state["response"]:
         optional_text_label="[Optional] Please provide an explanation",
         key=f"feedback_{len(messages)}",
     )
-    # This app is logging feedback to Trubrics backend, but you can send it anywhere.
-    # The return value of streamlit_feedback() is just a dict.
-    # Configure your own account at https://trubrics.streamlit.app/
+    
     if feedback and "TRUBRICS_EMAIL" in st.secrets:
         config = trubrics.init(
             email=st.secrets.TRUBRICS_EMAIL,

@@ -8,7 +8,6 @@ openai_api_key = st.sidebar.text_input("OpenAI API Key", type="password")
 
 
 def blog_outline(topic):
-    
     llm = OpenAI(model_name="text-davinci-003", openai_api_key=openai_api_key)
     
     template = "As an experienced data scientist and technical writer, generate an outline for a blog about {topic}."
