@@ -1,86 +1,74 @@
-from openai import OpenAI
-import streamlit as st
-import requests
 import time
+import requests
+import streamlit as st
+import os
 
-
-# Template da página
+# Configuração da página
 st.set_page_config(layout="wide")
 
-# Processo para carregar cada PDF
-def carregar_documentacao(url: str) -> bool:
-    st.toast(f"Processando: {url}", icon=":material/description:")
-    time.sleep(0.5)  # simula um tempinho para processamento
-    return True
+# Endpoints da API
+BASE_URL         = os.getenv("BASE_AWS_URL")
+STATUS_ENDPOINT  = f"{BASE_URL}/status"
+PROCESS_ENDPOINT = f"{BASE_URL}/process"
+QUERY_ENDPOINT   = f"{BASE_URL}/query"
 
-# Entrada para diversos links de PDFs
+# Entrada de várias URLs de PDF e disparar /process
 @st.dialog("📄 Enviar PDFs", width="small")
 def solicitar_pdfs():
-    text = st.text_area(
-        "🔗 Cole as URLs (uma por linha)",
-        height=120,
-        key="dialog_pdf_urls"
-    )
+    text = st.text_area("🔗 Cole as URLs (uma por linha)", height=120, key="dialog_pdf_urls")
     col_ok, col_cancel = st.columns(2)
     with col_ok:
         if st.button("✅ OK", key="dialog_ok"):
-            # separar as linhas não vazias
             urls = [u.strip() for u in text.splitlines() if u.strip()]
-            if urls:
-                st.session_state.pending_pdf_urls = urls
-                st.toast(f"{len(urls)} URL(s) confirmada(s)!", icon=":material/check_circle:")
-                st.rerun()
-            else:
+            if not urls:
                 st.toast("Nenhuma URL válida encontrada.", icon=":material/error:")
+                return
+            st.toast(f"{len(urls)} URL(s) confirmada(s)!", icon=":material/check_circle:")
+            try:
+                r = requests.post(PROCESS_ENDPOINT, json={"urls": urls})
+                r.raise_for_status()
+                st.toast("Processamento iniciado!", icon=":material/rocket:")
+                with st.spinner("⏳ Carregando contexto..."):
+                    while True:
+                        r2 = requests.get(STATUS_ENDPOINT)
+                        r2.raise_for_status()
+                        s = r2.json()
+                        if s["status"] == "ready" and s["progress"] == 100:
+                            break
+                        if s["status"] == "error":
+                            st.error(f"❌ Erro no servidor: {s.get('message','')}")
+                            st.stop()
+                        time.sleep(1)
+                st.toast("✅ Contexto pronto!", icon=":material/check_circle:")
+            except Exception as e:
+                st.error(f"❌ Falha ao iniciar processamento: {e}")
+            finally:
+                st.rerun()
     with col_cancel:
         if st.button("❌ Cancelar", key="dialog_cancel"):
             st.toast("Envio cancelado.", icon=":material/cancel:")
             st.rerun()
 
-# Confirmação do processamento da lista
-@st.dialog("⚙️ Confirmar Processamento", width="small")
-def confirmar_processamento():
-    urls = st.session_state.pending_pdf_urls or []
-    st.write("Deseja processar estes PDFs?\n")
-    for u in urls:
-        st.write(f"- `{u}`")
-    col_yes, col_no = st.columns(2)
-    with col_yes:
-        if st.button("✅ Processar tudo", key="confirm_ok"):
-            successes = 0
-            for url in urls:
-                if carregar_documentacao(url):
-                    successes += 1
-            if successes == len(urls):
-                st.toast("Todos os PDFs processados com sucesso!", icon=":material/check_circle:")
-            else:
-                st.toast(f"{successes}/{len(urls)} processados com sucesso.", icon=":material/warning:")
-            st.session_state.pending_pdf_urls = None
-            # recarrega a aplicação como um todo
-            if hasattr(st, "experimental_rerun"):
-                st.experimental_rerun()
-            else:
-                st.rerun()
-    with col_no:
-        if st.button("❌ Cancelar", key="confirm_cancel"):
-            st.toast("Processamento cancelado.", icon=":material/cancel:")
-            st.session_state.pending_pdf_urls = None
-            if hasattr(st, "experimental_rerun"):
-                st.experimental_rerun()
-            else:
-                st.rerun()
+# Obter status sem exibir nada
+def fetch_status():
+    try:
+        r = requests.get(STATUS_ENDPOINT)
+        r.raise_for_status()
+        return r.json()
+    except:
+        return {"status": "unknown", "progress": 0}
 
-# Limpeza das chaves antigas
-if "chatbot_api_key" in st.session_state:
-    del st.session_state["chatbot_api_key"]
-
-# Estado padrao
+# Estado inicial mensagens
 st.session_state.setdefault("messages", [
-    {"role": "assistant", "content": "Como posso lhe ajudar?"},
+    {"role": "assistant", "content": "How can I help you?"},
 ])
-st.session_state.setdefault("pending_pdf_urls", None)
 
-# --- HEADER COM BOTÃO DO PDF ---
+# Ao detectar 'idle', abre modal de PDFs
+status = fetch_status()
+if status["status"] == "idle":
+    solicitar_pdfs()
+
+# HEADER COM BOTÃO PDF
 col_title, col_btn = st.columns([9, 1])
 with col_title:
     st.title("💬 Level-1")
@@ -89,25 +77,22 @@ with col_btn:
     if st.button("📄 PDF"):
         solicitar_pdfs()
 
-# Se tem links em espera, vai abrir tela de confirmação
-if st.session_state.pending_pdf_urls:
-    confirmar_processamento()
-
 # Histórico de mensagens
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# Chat padrão
+# Entrada de chat
 if prompt := st.chat_input("Digite aqui…"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-
-    resp = requests.post(
-        "http://127.0.0.1:8001/query",
-        json={"query": prompt, "k": 3},
-        headers={"Accept": "application/json", "Content-Type": "application/json"},
-    )
-    resp.raise_for_status()
-    answer = resp.json().get("response", "erro ao renderizar")
-    st.session_state.messages.append({"role": "assistant", "content": answer})
-    st.chat_message("assistant").write(answer)
+    try:
+        r = requests.post(QUERY_ENDPOINT, json={"query": prompt, "k": 3})
+        r.raise_for_status()
+        answer = r.json().get("response", "")
+        if not answer:
+            raise ValueError("Resposta vazia")
+    except Exception as e:
+        st.error(f"❌ Erro ao obter resposta: {e}")
+    else:
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+        st.chat_message("assistant").write(answer)
