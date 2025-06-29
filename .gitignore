@@ -5,3 +5,7 @@ venv/
 __pycache__/
 *.pyc
 *.log
+sonar-project.properties
+htmlcov
+.coverage
+.scannerwork

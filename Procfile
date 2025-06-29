@@ -1,1 +1,1 @@
-web: streamlit run chatbot.py --server.port $PORT --server.headless true
+web: streamlit run --server.port 8000 --server.headless true Chatbot.py

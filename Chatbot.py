@@ -3,16 +3,15 @@ import requests
 import streamlit as st
 import os
 
-# Configuração da página
+
 st.set_page_config(layout="wide")
 
-# Endpoints da API
+# Endpoints
 BASE_URL         = os.getenv("BASE_AWS_URL")
 STATUS_ENDPOINT  = f"{BASE_URL}/status"
 PROCESS_ENDPOINT = f"{BASE_URL}/process"
 QUERY_ENDPOINT   = f"{BASE_URL}/query"
 
-# Entrada de várias URLs de PDF e disparar /process
 @st.dialog("📄 Enviar PDFs", width="small")
 def solicitar_pdfs():
     text = st.text_area("🔗 Cole as URLs (uma por linha)", height=120, key="dialog_pdf_urls")
@@ -49,7 +48,6 @@ def solicitar_pdfs():
             st.toast("Envio cancelado.", icon=":material/cancel:")
             st.rerun()
 
-# Obter status sem exibir nada
 def fetch_status():
     try:
         r = requests.get(STATUS_ENDPOINT)
@@ -58,12 +56,11 @@ def fetch_status():
     except:
         return {"status": "unknown", "progress": 0}
 
-# Estado inicial mensagens
+# Estado inicial
 st.session_state.setdefault("messages", [
     {"role": "assistant", "content": "How can I help you?"},
 ])
 
-# Ao detectar 'idle', abre modal de PDFs
 status = fetch_status()
 if status["status"] == "idle":
     solicitar_pdfs()
@@ -71,8 +68,8 @@ if status["status"] == "idle":
 # HEADER COM BOTÃO PDF
 col_title, col_btn = st.columns([9, 1])
 with col_title:
-    st.title("💬 Level-1")
-    st.caption("🚀 API de Suporte Level 1")
+    st.title("💬 Chatbot")
+    st.caption("🚀 API de chatbot")
 with col_btn:
     if st.button("📄 PDF"):
         solicitar_pdfs()
@@ -81,7 +78,7 @@ with col_btn:
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
-# Entrada de chat
+# Chat
 if prompt := st.chat_input("Digite aqui…"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
