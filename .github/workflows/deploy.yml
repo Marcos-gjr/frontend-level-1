@@ -56,5 +56,5 @@ jobs:
       - name: Atualizar ambiente no Elastic Beanstalk
         run: |
           aws elasticbeanstalk update-environment \
-            --environment-name front-end-deploy-env \
+            --environment-name Front-end-deploy-env \
             --version-label ${{ github.sha }}
