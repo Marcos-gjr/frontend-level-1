@@ -3,7 +3,7 @@ name: Deploy no AWS Elastic Beanstalk
 on:
   push:
     branches:
-      - master      
+      - master
   workflow_dispatch:
 
 jobs:
@@ -40,6 +40,16 @@ jobs:
 
       - name: Empacotar código
         run: zip -r deploy.zip .
+
+      - name: Verificar conteúdo do bundle
+        run: |
+          unzip -l deploy.zip
+
+      - name: Upload do bundle como artefato
+        uses: actions/upload-artifact@v3
+        with:
+          name: deploy-bundle
+          path: deploy.zip
 
       - name: Enviar bundle para S3
         run: |
