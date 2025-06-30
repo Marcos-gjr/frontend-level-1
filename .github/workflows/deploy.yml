@@ -45,12 +45,6 @@ jobs:
         run: |
           unzip -l deploy.zip
 
-      - name: Upload do bundle como artefato
-        uses: actions/upload-artifact@v3
-        with:
-          name: deploy-bundle
-          path: deploy.zip
-
       - name: Enviar bundle para S3
         run: |
           aws s3 cp deploy.zip \
