@@ -1,11 +1,12 @@
-# não versionar variáveis de ambiente
 .env
-# virtual env
+
 venv/
 .venv
 __pycache__/
 *.pyc
 *.log
+
 sonar-project.properties
 htmlcov
 .coverage
+.scannerwork

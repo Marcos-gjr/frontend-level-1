@@ -78,7 +78,7 @@ def main():
 
         col_ok, col_cancel = st.columns(2)
         with col_ok:
-            if st.button("✅ OK", key="dialog_ok"):
+            if st.button("Enviar", key="dialog_ok"):
                 urls = parse_urls(text)
                 if not urls and not uploaded_files:
                     st.toast("Nenhuma URL ou arquivo válido encontrado.", icon=":material/error:")
@@ -90,14 +90,14 @@ def main():
                     st.toast("🚀 Processamento iniciado!", icon=":material/rocket:")
                     with st.spinner("⏳ Carregando contexto..."):
                         start_processing(urls, uploaded_files)
-                    st.toast("✅ Contexto pronto!", icon=":material/check_circle:")
+                    st.toast("Contexto pronto!", icon=":material/check_circle:")
                 except Exception as e:
-                    st.error(f"❌ {e}")
+                    st.error(f"Erro ao criar contexto: {e}")
                 finally:
                     st.rerun()
 
         with col_cancel:
-            if st.button("❌ Cancelar", key="dialog_cancel"):
+            if st.button("Cancelar", key="dialog_cancel"):
                 st.toast("Envio cancelado.", icon=":material/cancel:")
                 st.rerun()
 
@@ -114,7 +114,7 @@ def main():
     col_title, col_btn = st.columns([9, 1])
     with col_title:
         st.title("💬 Level 1")
-        st.caption("🚀 Bem-vindo ao assistente Level 1")
+        st.caption("Bem-vindo ao assistente Level 1")
     with col_btn:
         if st.button("📄 PDF"):
             solicitar_pdfs()
@@ -128,7 +128,7 @@ def main():
         try:
             answer = query_api(prompt, k=3)
         except Exception as e:
-            st.error(f"❌ Erro ao obter resposta: {e}")
+            st.error(f"Erro ao obter resposta: {e}")
         else:
             st.session_state.messages.append({"role": "assistant", "content": answer})
             st.chat_message("assistant").write(answer)
